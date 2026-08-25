@@ -1,0 +1,36 @@
+# Virtual Environments
+venv/
+env/
+ENV/
+
+# Python Cache & Build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environment Variables & Secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Data & Model Weights Output
+data/input/*
+!data/input/.gitkeep
+data/output/*
+!data/output/.gitkeep
+*.pt
+*.pth
+*.bin
+*.onnx
+*.glb
+*.gltf
+*.obj
+
+# IDEs & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,7 @@
+torch
+torchvision
+rembg
+pillow
+opencv-python
+numpy
+matplotlib
