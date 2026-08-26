@@ -6,8 +6,7 @@ Generative AI & 3D Computer Vision Target Stack: Python, PyTorch, FastAPI, Three
 Execution
 Model:
 Single 2D Image to 3D Mesh (.glb) Estimated
-Time:
-4 to 5 Weeks (Phased)
+Time: 4 to 5 Weeks (Phased)
 1. Executive Summary & Vision
 Traditional 3D asset creation requires intensive manual modeling in software like Blender or Maya, taking hours or
 days per object. This project implements a cutting-edge 2D-to-3D Spatial Asset Pipeline that transforms a single
