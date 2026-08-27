@@ -5,11 +5,14 @@ from pathlib import Path
 from PIL import Image
 
 from src.bg_remover import BackgroundRemovalError, remove_background
+from src.depth_estimator import DepthEstimationError, estimate_depth_and_normals
 from src.preprocessor import ImageLoadError, preprocess_image
 
 INPUT_DIR = Path("data/input")
 OUTPUT_DIR = Path("data/output")
 OUTPUT_IMAGE = OUTPUT_DIR / "no_bg_sample.png"
+DEPTH_IMAGE = OUTPUT_DIR / "depth_map.png"
+NORMAL_IMAGE = OUTPUT_DIR / "normal_map.png"
 DEFAULT_IMAGE = INPUT_DIR / "example.png"
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
 
@@ -52,21 +55,38 @@ def main() -> None:
         cutout = remove_background(result.array)
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         cutout.save(OUTPUT_IMAGE)
+        print(f"Saved RGBA cutout: {OUTPUT_IMAGE.resolve()}")
+        print(f"Output mode:   {cutout.mode}")
+        print(f"Output size:   {cutout.size[0]}x{cutout.size[1]}")
+        print(f"Output bands:  {cutout.getbands()}")
+
+        depth_map, normal_map = estimate_depth_and_normals(cutout)
+        depth_map.save(DEPTH_IMAGE)
+        normal_map.save(NORMAL_IMAGE)
     except ImageLoadError as exc:
         print(f"Failed to load test image '{sample}': {exc}")
         return
     except BackgroundRemovalError as exc:
         print(f"Failed to remove background from '{sample}': {exc}")
         return
+    except DepthEstimationError as exc:
+        print(f"Failed to estimate depth/normals from '{sample}': {exc}")
+        return
     except OSError as exc:
         print(f"Failed to process test image '{sample}': {exc}")
         return
 
-    print(f"Saved RGBA cutout: {OUTPUT_IMAGE.resolve()}")
-    print(f"Output mode:   {cutout.mode}")
-    print(f"Output size:   {cutout.size[0]}x{cutout.size[1]}")
-    print(f"Output bands:  {cutout.getbands()}")
-    print("Phase 1 preprocess + background removal completed successfully.")
+    print(
+        f"Depth map:    size={depth_map.size[0]}x{depth_map.size[1]}  "
+        f"mode={depth_map.mode}  shape=({depth_map.size[1]}, {depth_map.size[0]})"
+    )
+    print(
+        f"Normal map:   size={normal_map.size[0]}x{normal_map.size[1]}  "
+        f"mode={normal_map.mode}  shape=({normal_map.size[1]}, {normal_map.size[0]}, 3)"
+    )
+    print(f"Saved depth map:  {DEPTH_IMAGE.resolve()}")
+    print(f"Saved normal map: {NORMAL_IMAGE.resolve()}")
+    print("Phase 1 preprocess, background removal, and depth estimation completed successfully.")
 
 
 if __name__ == "__main__":
