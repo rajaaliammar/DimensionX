@@ -1,72 +1,57 @@
-"""DimensionX Phase 2 entry point: point cloud and initial mesh reconstruction."""
+"""DimensionX Phase 2: dynamic UV mapping on the Phase 1 extruded mesh."""
 
 from pathlib import Path
 
-from PIL import Image
-
-from src.mesh_generator import MeshGenerationError, create_point_cloud_and_mesh
+from src.mesh_generator import MeshGenerationError
+from src.uv_mapper import UVMappingError, map_mesh_from_files, save_uv_mesh
 
 OUTPUT_DIR = Path("data/output")
 CUTOUT_IMAGE = OUTPUT_DIR / "no_bg_sample.png"
-DEPTH_IMAGE = OUTPUT_DIR / "depth_map.png"
-MESH_PATH = OUTPUT_DIR / "initial_mesh.obj"
+SOURCE_MESH = OUTPUT_DIR / "initial_mesh.obj"
+UV_MESH = OUTPUT_DIR / "uv_mapped_mesh.obj"
+TEXTURE_PATH = OUTPUT_DIR / "shirt_texture.png"
 
 
 def main() -> None:
-    missing = [str(path) for path in (CUTOUT_IMAGE, DEPTH_IMAGE) if not path.is_file()]
+    missing = [str(path) for path in (SOURCE_MESH, CUTOUT_IMAGE) if not path.is_file()]
     if missing:
         print(
             "Missing Phase 1 outputs: "
             + ", ".join(missing)
-            + ". Run main_phase1.py first to generate no_bg_sample.png and depth_map.png."
+            + ". Run main_phase1.py first to generate initial_mesh.obj and no_bg_sample.png."
         )
         return
 
+    print("=== Phase 2: Dynamic UV Mapping ===")
+    print(f"Source mesh:   {SOURCE_MESH}")
+    print(f"T-shirt image: {CUTOUT_IMAGE}")
     try:
-        with Image.open(CUTOUT_IMAGE) as cutout, Image.open(DEPTH_IMAGE) as depth:
-            cutout.load()
-            depth.load()
-            print(f"Cutout path:  {CUTOUT_IMAGE}")
-            print(f"Cutout size:  {cutout.size[0]}x{cutout.size[1]}  mode={cutout.mode}")
-            print(f"Depth path:   {DEPTH_IMAGE}")
-            print(f"Depth size:   {depth.size[0]}x{depth.size[1]}  mode={depth.mode}")
-            rgba = cutout.convert("RGBA").copy()
-            depth_map = depth.convert("L").copy()
-
-        mesh = create_point_cloud_and_mesh(rgba, depth_map)
-        print(f"Z-scale:      {mesh.z_scale:.2f} (clamped to 0.10-0.25)")
-        print(f"Depth blur:   Gaussian sigma={mesh.blur_sigma}")
-        print(f"Alpha clip:   drop vertices with alpha < {mesh.min_alpha}")
-        print(f"Extrude:      single-mesh downward extrusion depth={mesh.extrude_depth:.3f}")
-        print(f"Back cap:     flat mirrored silhouette polygon")
-        print(f"Seam edges:   {mesh.boundary_edge_count}")
-        print(f"is_watertight: {mesh.is_watertight}")
-        print(f"Components:   {mesh.component_count}")
-        print(f"Point cloud:  {mesh.point_count} points")
-        print(f"Vertices:     {mesh.vertex_count}")
-        print(f"Faces:        {mesh.face_count}")
-
-        exported = mesh.export_mesh(MESH_PATH)
-    except MeshGenerationError as exc:
-        print(f"Failed to reconstruct 3D mesh: {exc}")
+        mesh, texture, stats = map_mesh_from_files(SOURCE_MESH, CUTOUT_IMAGE)
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        texture.save(TEXTURE_PATH)
+        exported = save_uv_mesh(mesh, UV_MESH)
+    except (UVMappingError, MeshGenerationError) as exc:
+        print(f"Failed to apply UV mapping: {exc}")
         return
     except OSError as exc:
-        print(f"Failed to load Phase 1 outputs: {exc}")
+        print(f"Failed to write UV outputs: {exc}")
         return
 
-    print(f"Saved mesh:   {Path(exported).resolve()}")
-    try:
-        import trimesh
-
-        loaded = trimesh.load(exported, force="mesh", process=False)
-        print(f"trimesh watertight: {bool(loaded.is_watertight)}")
-        print(f"trimesh components: {len(loaded.split(only_watertight=False))}")
-        print(f"trimesh winding consistent: {bool(getattr(loaded, 'is_winding_consistent', False))}")
-    except ImportError:
-        print("trimesh not installed; using built-in watertight check only.")
-    except Exception as exc:
-        print(f"trimesh check skipped: {exc}")
-    print("Phase 2 closed volumetric mesh reconstruction completed successfully.")
+    print(f"Vertices:      {stats['vertex_count']}")
+    print(f"Faces:         {stats['face_count']}")
+    print(f"Front verts:   {stats['front_vertices']}  (planar map onto T-shirt image)")
+    print(f"Cap verts:     {stats['cap_vertices']}  (outward UV offset into edge-color band)")
+    print(f"Front faces:   {stats['front_faces']}")
+    print(f"Side faces:    {stats['side_faces']}")
+    print(f"Back faces:    {stats['back_faces']}")
+    print(
+        f"UV range:      u=[{stats['uv_min'][0]:.3f}, {stats['uv_max'][0]:.3f}]  "
+        f"v=[{stats['uv_min'][1]:.3f}, {stats['uv_max'][1]:.3f}]"
+    )
+    print(f"Texture pad:   {stats['pad']}px edge-color dilation")
+    print(f"Saved texture: {TEXTURE_PATH.resolve()}  size={texture.size[0]}x{texture.size[1]}")
+    print(f"Saved UV mesh: {Path(exported).resolve()}")
+    print("Phase 2 UV mapping completed successfully.")
 
 
 if __name__ == "__main__":
