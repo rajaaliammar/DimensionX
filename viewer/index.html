@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DimensionX — Virtual Try-On Viewer</title>
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #171b24;
+      --panel-border: #2a3140;
+      --text: #e8ecf4;
+      --muted: #9aa3b5;
+      --accent: #3d8bfd;
+      --accent-dim: #2a5fad;
+      --ready: #3ecf8e;
+      --warn: #f0b429;
+      --error: #f07178;
+      --canvas-bg: #1a1f2b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--panel-border);
+      padding: 1.25rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      overflow-y: auto;
+      z-index: 2;
+    }
+
+    .brand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .brand span {
+      color: var(--accent);
+      font-weight: 500;
+      display: block;
+      font-size: 0.78rem;
+      margin-top: 0.2rem;
+      letter-spacing: 0.02em;
+    }
+
+    .section-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .upload-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px dashed var(--accent-dim);
+      border-radius: 8px;
+      background: rgba(61, 139, 253, 0.08);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .upload-btn:hover:not(:disabled) {
+      background: rgba(61, 139, 253, 0.16);
+      border-color: var(--accent);
+    }
+
+    .upload-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    #file-input { display: none; }
+
+    .preview-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      background: #0c0f14;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-wrap img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .preview-wrap .placeholder {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .status-card {
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      background: #12161f;
+    }
+
+    .status-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .status-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      min-height: 1.35em;
+    }
+
+    .status-value.ready { color: var(--ready); }
+    .status-value.error { color: var(--error); }
+    .status-value.busy { color: var(--warn); }
+
+    .stats {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .stats strong { color: var(--text); font-weight: 600; }
+
+    .hint {
+      margin-top: auto;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    #viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at 50% 40%, #242b3a 0%, var(--canvas-bg) 65%, #0e1118 100%);
+    }
+
+    #canvas-host {
+      width: 100%;
+      height: 100%;
+    }
+
+    .overlay-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.4rem 0.7rem;
+      border-radius: 6px;
+      background: rgba(15, 18, 24, 0.72);
+      border: 1px solid var(--panel-border);
+      font-size: 0.75rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    @media (max-width: 800px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      aside {
+        max-height: 42vh;
+        border-right: none;
+        border-bottom: 1px solid var(--panel-border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside>
+      <div class="brand">
+        DimensionX
+        <span>Interactive Virtual Try-On</span>
+      </div>
+
+      <div>
+        <div class="section-title">Source image</div>
+        <label class="upload-btn" id="upload-label" for="file-input">
+          Upload 2D Garment Image
+        </label>
+        <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" />
+      </div>
+
+      <div>
+        <div class="section-title">Preview</div>
+        <div class="preview-wrap" id="preview">
+          <div class="placeholder">No image selected</div>
+        </div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-label">Pipeline status</div>
+        <div class="status-value busy" id="status">Loading model...</div>
+      </div>
+
+      <div class="stats" id="stats">
+        Vertices: —<br />
+        Faces: —<br />
+        GLB: —
+      </div>
+
+      <p class="hint">
+        Drag to orbit · Right-drag to pan · Scroll to zoom.<br />
+        Upload a garment photo to regenerate the 3D asset through the full pipeline.
+      </p>
+    </aside>
+
+    <main id="viewport">
+      <div id="canvas-host"></div>
+      <div class="overlay-badge">PBR fabric · roughness 0.7 · metallic 0.0</div>
+    </main>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    const statusEl = document.getElementById("status");
+    const statsEl = document.getElementById("stats");
+    const previewEl = document.getElementById("preview");
+    const fileInput = document.getElementById("file-input");
+    const uploadLabel = document.getElementById("upload-label");
+    const host = document.getElementById("canvas-host");
+
+    const DEFAULT_GLB = "/data/output/final_garment.glb";
+    let currentModel = null;
+    let busy = false;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1f2b);
+    scene.fog = new THREE.Fog(0x1a1f2b, 4.5, 12);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+    camera.position.set(0.55, 0.35, 1.35);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    host.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 0.25;
+    controls.maxDistance = 6;
+    controls.target.set(0, 0, 0);
+
+    // Studio lighting for PBR fabric
+    const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+    scene.add(ambient);
+
+    const hemi = new THREE.HemisphereLight(0xdde7ff, 0x2a2f3a, 0.35);
+    scene.add(hemi);
+
+    const key = new THREE.DirectionalLight(0xffffff, 1.15);
+    key.position.set(2.2, 3.4, 1.8);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 0.1;
+    key.shadow.camera.far = 20;
+    key.shadow.camera.left = -2;
+    key.shadow.camera.right = 2;
+    key.shadow.camera.top = 2;
+    key.shadow.camera.bottom = -2;
+    key.shadow.bias = -0.0002;
+    key.shadow.radius = 3;
+    scene.add(key);
+
+    const fill = new THREE.DirectionalLight(0xb8c8ff, 0.35);
+    fill.position.set(-2.0, 1.2, -1.5);
+    scene.add(fill);
+
+    const rim = new THREE.DirectionalLight(0xfff0e0, 0.25);
+    rim.position.set(0.2, 1.5, -2.5);
+    scene.add(rim);
+
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(2.5, 64),
+      new THREE.ShadowMaterial({ opacity: 0.28 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.55;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const loader = new GLTFLoader();
+
+    function setStatus(text, kind = "busy") {
+      statusEl.textContent = text;
+      statusEl.className = `status-value ${kind}`;
+    }
+
+    function setBusy(state) {
+      busy = state;
+      fileInput.disabled = state;
+      uploadLabel.style.pointerEvents = state ? "none" : "auto";
+      uploadLabel.style.opacity = state ? "0.55" : "1";
+    }
+
+    function resize() {
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      camera.aspect = w / Math.max(h, 1);
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    }
+
+    function frameObject(object) {
+      const box = new THREE.Box3().setFromObject(object);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      object.position.sub(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+      const fitDist = maxDim / (2 * Math.tan((camera.fov * Math.PI) / 360));
+      camera.position.set(fitDist * 0.55, fitDist * 0.35, fitDist * 1.25);
+      controls.target.set(0, 0, 0);
+      controls.update();
+      ground.position.y = -size.y * 0.5 - 0.02;
+    }
+
+    function clearModel() {
+      if (!currentModel) return;
+      scene.remove(currentModel);
+      currentModel.traverse((child) => {
+        if (child.isMesh) {
+          child.geometry?.dispose?.();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m) => m.dispose?.());
+          } else {
+            child.material?.dispose?.();
+          }
+        }
+      });
+      currentModel = null;
+    }
+
+    function loadModel(url, meta = null) {
+      setStatus("Loading model...", "busy");
+      const bust = url.includes("?") ? url : `${url}?t=${Date.now()}`;
+      loader.load(
+        bust,
+        (gltf) => {
+          clearModel();
+          currentModel = gltf.scene;
+          currentModel.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.material) {
+                child.material.side = THREE.FrontSide;
+                child.material.needsUpdate = true;
+              }
+            }
+          });
+          scene.add(currentModel);
+          frameObject(currentModel);
+          setStatus("Ready", "ready");
+          if (meta) {
+            statsEl.innerHTML =
+              `Vertices: <strong>${meta.vertex_count ?? "—"}</strong><br />` +
+              `Faces: <strong>${meta.face_count ?? "—"}</strong><br />` +
+              `GLB: <strong>${meta.file_size_mb != null ? meta.file_size_mb.toFixed(3) + " MB" : "—"}</strong>`;
+          }
+        },
+        undefined,
+        (err) => {
+          console.error(err);
+          setStatus("Failed to load GLB", "error");
+        }
+      );
+    }
+
+    async function pollStatus() {
+      try {
+        const res = await fetch("/api/status");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status) {
+          const kind = data.status === "Ready"
+            ? "ready"
+            : data.status.startsWith("Error")
+              ? "error"
+              : "busy";
+          setStatus(data.status, kind);
+        }
+      } catch (_) {
+        /* ignore poll errors while uploading */
+      }
+    }
+
+    async function processUpload(file) {
+      setBusy(true);
+      setStatus("Uploading image...", "busy");
+
+      const form = new FormData();
+      form.append("file", file);
+
+      const poll = setInterval(pollStatus, 700);
+      try {
+        const res = await fetch("/api/process", { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        setStatus("Ready", "ready");
+        loadModel(data.glb_url || DEFAULT_GLB, data);
+      } catch (err) {
+        console.error(err);
+        setStatus(`Error: ${err.message}`, "error");
+      } finally {
+        clearInterval(poll);
+        setBusy(false);
+      }
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files?.[0];
+      if (!file || busy) return;
+      const url = URL.createObjectURL(file);
+      previewEl.innerHTML = `<img src="${url}" alt="Garment preview" />`;
+      processUpload(file);
+      fileInput.value = "";
+    });
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    (function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    })();
+
+    // Initial model load
+    loadModel(DEFAULT_GLB);
+  </script>
+</body>
+</html>
