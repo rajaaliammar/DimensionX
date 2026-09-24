@@ -1,4 +1,4 @@
-Single Image Real-Time 3D Asset Generator
+Single Image Real-Time 3D Asset Generator    
 Comprehensive Architecture, Tech Stack & Implementation Roadmap
 Project
 Domain:
