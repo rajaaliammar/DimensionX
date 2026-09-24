@@ -10,7 +10,7 @@ Time: 4 to 5 Weeks (Phased)
 1. Executive Summary & Vision   
 Traditional 3D asset creation requires intensive manual modeling in software like Blender or Maya, taking hours or
 days per object. This project implements a cutting-edge 2D-to-3D Spatial Asset Pipeline that transforms a single
-high-resolution 2D image into a clean, fully textured 3D mesh (.glb/.obj) within 10–30 seconds.
+high-resolution 2D image into a clean, fully textured 3D mesh (.glb/.obj) within 10–30 seconds.           
 Hardware Note: This application relies on uploaded images rather than webcam streams, eliminating any local
 camera hardware constraints while maximizing output visual quality.
 2. System Architecture & Modular Pipeline
