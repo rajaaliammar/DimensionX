@@ -3,7 +3,7 @@ Comprehensive Architecture, Tech Stack & Implementation Roadmap
 Project
 Domain:
 Generative AI & 3D Computer Vision Target Stack: Python, PyTorch, FastAPI, Three.js
-Execution               
+Execution                                  
 Model:
 Single 2D Image to 3D Mesh (.glb) Estimated
 Time: 4 to 5 Weeks (Phased)
