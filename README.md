@@ -43,7 +43,7 @@ Phase 2: 3D Generation & Mesh Engine Integration Week 2 - Week 3
 Integrate open-source 3D inference models (TripoSR / InstantMesh via PyTorch/HuggingFace).
 Develop post-processing scripts using Trimesh to clean noisy vertices and optimize polycount.
 Wrap the pipeline into an asynchronous FastAPI endpoint (/api/generate-3d).
-Phase 3: Interactive Web Studio Frontend Week 4
+Phase 3: Interactive Web Studio Frontend Week 4                                      
 Initialize Next.js / React project integrated with @react-three/fiber and @react-three/drei.
 Implement drag-and-drop image upload and live generation status loading indicators.
 Build 360° orbit view controls, environment lighting selection, wireframe mode, and .glb export
