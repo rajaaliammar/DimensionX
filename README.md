@@ -65,7 +65,7 @@ Engine
 TripoSR / InstantMesh /
 PyTorch
 Deep learning models for ultra-fast single-image to 3D
-reconstruction.
+reconstruction.                               
 Mesh Processing Trimesh & Open3D
 Geometry cleaning, mesh smoothing, normal recalculation, and
 GLB/OBJ file export.
