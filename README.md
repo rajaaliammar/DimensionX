@@ -1,7 +1,7 @@
 Single Image Real-Time 3D Asset Generator    
 Comprehensive Architecture, Tech Stack & Implementation Roadmap
 Project
-Domain:
+Domain:                           
 Generative AI & 3D Computer Vision Target Stack: Python,PyTorch, FastAPI, Three.js                  
 Execution                                                              
 Model:                       
