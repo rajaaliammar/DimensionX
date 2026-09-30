@@ -27,7 +27,7 @@ Stage 3: Mesh Extraction & UV Texturing
 Using spatial algorithms (Marching Cubes / NeRF / Gaussian Splatting representation), the system extracts a
 watertight 3D polygonal mesh. Trimesh cleans duplicate vertices, fixes face normals, applies UV texture mapping,
 and exports the asset in web-optimized .glb format.
-Stage 4: Interactive Web Studio & Real-Time Viewer
+Stage 4: Interactive Web Studio & Real-Time Viewer        
 A modern web interface built with Next.js and Three.js (React Three Fiber) loads the generated 3D asset in an
 interactive canvas. Users can rotate, scale, change lighting environments, toggle wireframe modes, and download
 production-ready files.
