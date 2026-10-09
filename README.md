@@ -19,7 +19,7 @@ Stage 1: Pre-processing & Foreground Isolation
 Uploaded images are processed via RMBG-1.4 or rembg (U2-Net / BirefNet background removal models) to isolate
 the primary subject. The output is auto-cropped, centered, and padded to a square $512 imes 512$ canvas with
 transparency preservation.
-Stage 2: Multiview Inference Engine
+Stage 2: Multiview Inference Engine                     
 The isolated 2D subject is passed to a fast 3D reconstruction model (such as TripoSR or InstantMesh). The
 engine predicts orthographic multi-view projections and estimates spatial depth to construct a rough 3D volume
 representation.
