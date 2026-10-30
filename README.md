@@ -23,7 +23,7 @@ Stage 2: Multiview Inference Engine
 The isolated 2D subject is passed to a fast 3D reconstruction model (such as TripoSR or InstantMesh). The
 engine predicts orthographic multi-view projections and estimates spatial depth to construct a rough 3D volume
 representation.
-Stage 3: Mesh Extraction & UV Texturing
+Stage 3: Mesh Extraction & UV Texturing                     
 Using spatial algorithms (Marching Cubes / NeRF / Gaussian Splatting representation), the system extracts a
 watertight 3D polygonal mesh. Trimesh cleans duplicate vertices, fixes face normals, applies UV texture mapping,
 and exports the asset in web-optimized .glb format.
